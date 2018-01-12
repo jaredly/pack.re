@@ -112,7 +112,7 @@ require(1)
   |}
 };
 
-let parse = Minimist.parse(~multi=["rename"], ~strings=["base"]);
+let parse = Minimist.parse(~alias=[("h", "help")], ~presence=["help"], ~multi=["rename"], ~strings=["base"]);
 
 let help = {|
 # pack.re - a simple js bundler for reason
@@ -123,6 +123,8 @@ Usage: pack.re [options] entry-file.js > bundle.js
       expected to contain node_modules
   --rename newName=realName (can be defined multiple times)
       maps `require("newName")` to a node_module called "realName"
+  -h, --help
+      print this help
 |};
 
 let fail = (msg) => {
@@ -133,7 +135,10 @@ let fail = (msg) => {
 
 switch (parse(List.tl(Array.to_list(Sys.argv)))) {
 | Minimist.Error(err) => fail(Minimist.report(err))
-| Ok(opts) => switch (opts.rest) {
+| Ok(opts) =>
+if (Minimist.StrSet.mem("help", opts.presence)) {
+  print_endline(help); exit(0);
+} else switch (opts.rest) {
   | [] => fail("Expected entry file as final argument")
   | [entry] => process(
       ~base=?Minimist.get(opts.strings, "base"),

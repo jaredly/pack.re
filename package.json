@@ -1,6 +1,6 @@
 {
   "name": "pack.re",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "scripts": {
     "start": "bsb -make-world -w -backend native",
     "build": "bsb -make-world -backend native",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "rex-json": "1.0.2",
-    "minimist.re": "0.0.1",
+    "minimist.re": "0.0.2",
     "reason-cli-tools": "1.0.4"
   }
 }
