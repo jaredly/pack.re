@@ -11,8 +11,11 @@
   ],
   "bs-dependencies": ["rex-json", "reason-cli-tools"],
   "entries": [{
+    "backend": "bytecode",
+    "main-module": "Pack"
+  }, {
     "backend": "native",
-    "main-module": "Driver"
+    "main-module": "Pack"
   }],
-  "refmt": 3,
+  "refmt": 3
 }

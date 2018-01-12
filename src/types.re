@@ -1,10 +1,13 @@
 
 type require = {pos: int, length: int, text: string};
 
+module StrMap = Map.Make(String);
+
 type state = {
   entry: string,
   nodeModulesBase: string,
   ids: Hashtbl.t(string, int),
+  alias: StrMap.t(string),
   mutable nextId: int,
-  mutable modules: list((int, string))
+  mutable modules: list((int, string, string))
 };
