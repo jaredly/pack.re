@@ -1,10 +1,10 @@
 {
-  "name": "packre",
+  "name": "pack.re",
   "version": "0.0.1",
   "scripts": {
     "start": "bsb -make-world -w -backend native",
     "build": "bsb -make-world -backend native",
-    "test": "./lib/bs/bytecode/main.native ./test",
+    "test": "./lib/bs/native/pack.native ./test.js",
     "clean": "bsb -clean-world"
   },
   "keywords": [
@@ -16,7 +16,7 @@
     "bs-platform": "bsansouci/bsb-native#2.1.1"
   },
   "dependencies": {
-    "rex-json": "*",
-    "reason-cli-tools": "*"
+    "rex-json": "1.0.2",
+    "reason-cli-tools": "1.0.4"
   }
 }
