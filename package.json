@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "rex-json": "1.0.2",
+    "minimist.re": "0.0.1",
     "reason-cli-tools": "1.0.4"
   }
 }

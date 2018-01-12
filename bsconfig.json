@@ -9,7 +9,7 @@
     "src",
     "src/jeason"
   ],
-  "bs-dependencies": ["rex-json", "reason-cli-tools"],
+  "bs-dependencies": ["rex-json", "reason-cli-tools", "minimist.re"],
   "entries": [{
     "backend": "bytecode",
     "main-module": "Pack"

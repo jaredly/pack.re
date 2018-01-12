@@ -5,7 +5,7 @@ module StrMap = Map.Make(String);
 
 type state = {
   entry: string,
-  nodeModulesBase: string,
+  base: string,
   ids: Hashtbl.t(string, int),
   alias: StrMap.t(string),
   mutable nextId: int,

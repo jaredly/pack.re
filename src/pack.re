@@ -56,15 +56,33 @@ let rec process = (state, path) => {
 
 let mapOf = List.fold_left((m, (a, b)) => StrMap.add(a, b, m), StrMap.empty);
 
-let process = (abspath) => {
+let makeRelative = (a, b) => {
+  if (String.length(b) > String.length(a)) {
+    if (String.sub(b, 0, String.length(a)) == a) {
+      let res = String.sub(b, String.length(a), String.length(b) - String.length(a));
+      if (res.[0] == '/') {
+        "." ++ res
+      } else {
+        res
+      }
+    } else {
+      b
+    }
+  } else {
+    b
+  }
+};
+
+let process = (~renames, ~base=Unix.getcwd(), abspath) => {
   let state = {
     entry: abspath,
-    alias: mapOf([
-      /* ("Reprocessing", "@jaredly/reprocessing"),
+    alias: mapOf(renames),
+      /* [
+      ("Reprocessing", "@jaredly/reprocessing"),
       ("ReasonglWeb", "@jaredly/reasongl-web"),
-      ("ReasonglInterface", "@jaredly/reasongl-interface"), */
-    ]),
-    nodeModulesBase: "./node_modules",
+      ("ReasonglInterface", "@jaredly/reasongl-interface"),
+    ]), */
+    base,
     /* nodeModulesBase: "../../games/gravitron/node_modules", */
     ids: Hashtbl.create(100),
     nextId: 0,
@@ -77,7 +95,7 @@ let modules = {}
 let initializers = {
     |} ++ (List.map(
     ((id, path, body)) => string_of_int(id) ++ ": function(module, exports, require) {" ++  body
-     ++ "\n//# sourceURL=" ++ path ++ "\n}",
+     ++ "\n//# sourceURL=" ++ makeRelative(base, path) ++ "\n}",
     state.modules
   ) |> String.concat(",\n  "))
   ++ {|
@@ -94,14 +112,43 @@ require(1)
   |}
 };
 
-switch Sys.argv {
-| [|_, arg|] => process(Sys.argv[1]) |> print_endline
-| _ => print_endline({|
+let parse = Minimist.parse(~multi=["rename"], ~strings=["base"]);
+
+let help = {|
 # pack.re - a simple js bundler for reason
 
-Usage: pack.re entry-file.js > bundle.js
+Usage: pack.re [options] entry-file.js > bundle.js
 
-  node_modules is assumed to be in the current directory.
-  The output is printed to standard out.
-|})
+  --base (default: current directory)
+      expected to contain node_modules
+  --rename newName=realName (can be defined multiple times)
+      maps `require("newName")` to a node_module called "realName"
+|};
+
+let fail = (msg) => {
+  print_endline(msg);
+  print_endline(help);
+  exit(1);
 };
+
+switch (parse(List.tl(Array.to_list(Sys.argv)))) {
+| Minimist.Error(err) => fail(Minimist.report(err))
+| Ok(opts) => switch (opts.rest) {
+  | [] => fail("Expected entry file as final argument")
+  | [entry] => process(
+      ~base=?Minimist.get(opts.strings, "base"),
+      ~renames=
+        List.map(item => switch (Str.split(Str.regexp("="), item)) {
+        | [alias, m] => (alias, m)
+        | _ => fail("Expected rename argument to be of the form alias=realname")
+        }, Minimist.multi(opts.multi, "rename")),
+      entry
+    ) |> print_endline
+  | _ => fail("Only one entry file allowed")
+}
+};
+
+/* switch Sys.argv {
+| [|_, arg|] => process(Sys.argv[1]) |> print_endline
+| _ => print_endline()
+}; */

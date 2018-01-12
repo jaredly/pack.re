@@ -72,7 +72,7 @@ let resolve = (state, base, path) => {
       } else {
         moduleName
       };
-      let base = switch (findNodeModule(moduleName,state.nodeModulesBase )) {
+      let base = switch (findNodeModule(moduleName, Filename.concat(state.base, "node_modules"))) {
       | None => failwith("Node module not found: " ++ moduleName)
       | Some(x) => x
       };
