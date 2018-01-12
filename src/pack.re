@@ -60,11 +60,12 @@ let process = (abspath) => {
   let state = {
     entry: abspath,
     alias: mapOf([
-      ("Reprocessing", "@jaredly/reprocessing"),
+      /* ("Reprocessing", "@jaredly/reprocessing"),
       ("ReasonglWeb", "@jaredly/reasongl-web"),
-      ("ReasonglInterface", "@jaredly/reasongl-interface"),
+      ("ReasonglInterface", "@jaredly/reasongl-interface"), */
     ]),
-    nodeModulesBase: "../../games/gravitron/node_modules",
+    nodeModulesBase: "./node_modules",
+    /* nodeModulesBase: "../../games/gravitron/node_modules", */
     ids: Hashtbl.create(100),
     nextId: 0,
     modules: []
@@ -93,5 +94,14 @@ require(1)
   |}
 };
 
-process(Sys.argv[1])
-|> print_endline
+switch Sys.argv {
+| [|_, arg|] => process(Sys.argv[1]) |> print_endline
+| _ => print_endline({|
+# pack.re - a simple js bundler for reason
+
+Usage: pack.re entry-file.js > bundle.js
+
+  node_modules is assumed to be in the current directory.
+  The output is printed to standard out.
+|})
+};
