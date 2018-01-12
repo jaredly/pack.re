@@ -1,6 +1,6 @@
 {
   "name": "pack.re",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "scripts": {
     "start": "bsb -make-world -w -backend native",
     "build": "bsb -make-world -backend native",
