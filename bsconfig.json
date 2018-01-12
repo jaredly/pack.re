@@ -1,0 +1,18 @@
+{
+  "name": "packre",
+  "bsc-flags": "-w -27 -g",
+  "warnings": {
+    "number": "-40+6+7-26-27+32..39-28-44+45",
+    "error": "+8",
+  },
+  "sources": [
+    "src",
+    "src/jeason"
+  ],
+  "bs-dependencies": ["rex-json", "reason-cli-tools"],
+  "entries": [{
+    "backend": "native",
+    "main-module": "Driver"
+  }],
+  "refmt": 3,
+}

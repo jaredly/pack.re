@@ -1,0 +1,22 @@
+{
+  "name": "packre",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "bsb -make-world -w -backend native",
+    "build": "bsb -make-world -backend native",
+    "test": "./lib/bs/bytecode/main.native ./test",
+    "clean": "bsb -clean-world"
+  },
+  "keywords": [
+    "BuckleScript"
+  ],
+  "author": "Jared Forsyth",
+  "license": "MIT",
+  "devDependencies": {
+    "bs-platform": "bsansouci/bsb-native#2.1.1"
+  },
+  "dependencies": {
+    "rex-json": "*",
+    "reason-cli-tools": "*"
+  }
+}
