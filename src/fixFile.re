@@ -5,6 +5,8 @@ let rec firstPart = parts => {
   let d = Filename.dirname(parts);
   if (d == ".") {
     parts
+  } else if (parts.[0] == '@' && Filename.dirname(d) == ".") {
+    parts
   } else {
     firstPart(d)
   }
@@ -15,29 +17,36 @@ let exists = path => try {Unix.stat(path) |> ignore; true} {
 | Unix.Unix_error(Unix.ENOTDIR, _, _) => false
 };
 
-let rec findNodeModule = (needle, base) => {
-  if (exists(base) && ReasonCliTools.Files.isDirectory(base)) {
-    let full = Filename.concat(base, needle);
-    if (ReasonCliTools.Files.isDirectory(full)) {
-      Some(full)
-    } else {
-      let names = ReasonCliTools.Files.readDirectory(base);
-      let rec loop = names => {
-        switch (names) {
-        | [name, ...rest] => {
-          let child = name.[0] == '@' ? name : Filename.concat(name, "node_modules");
-          switch (findNodeModule(needle, Filename.concat(base, child))) {
-          | None => loop(rest)
-          | Some(x) => Some(x)
-          }
-        }
-        | [] => None
-      }
-      };
-      loop(names)
-    }
-  } else {
+let startsWith = (thing, prefix) => String.sub(thing, 0, String.length(prefix)) == prefix;
+
+let higherNodeModules = (path) => {
+  let parts = Str.split(Str.regexp(Filename.dir_sep), path);
+  let rec loop = parts => switch parts {
+  | ["node_modules", ...rest] => Some(rest)
+  | [_, ...rest] => loop(rest)
+  | [] => None
+  };
+  let subs = loop(List.rev(parts));
+  switch subs {
+  | Some(parts) => Some(String.concat(Filename.dir_sep, List.rev(parts)))
+  | None => None
+  };
+};
+
+let (/+) = Filename.concat;
+
+open ReasonCliTools;
+
+let hasPackageJson = d => Files.isFile(d /+ "package.json");
+
+let rec findNodeModule = (needle, current, root) => {
+  let full = current /+ "node_modules" /+ needle;
+  if (hasPackageJson(current) && Files.isDirectory(full)) {
+    Some(full)
+  } else if (current == root) {
     None
+  } else {
+    findNodeModule(needle, Filename.dirname(current), root)
   }
 };
 
@@ -72,7 +81,7 @@ let resolve = (state, base, path) => {
       } else {
         moduleName
       };
-      let base = switch (findNodeModule(moduleName, Filename.concat(state.base, "node_modules"))) {
+      let base = switch (findNodeModule(moduleName, Filename.dirname(base), state.base)) {
       | None => failwith("Node module not found: " ++ moduleName)
       | Some(x) => x
       };
