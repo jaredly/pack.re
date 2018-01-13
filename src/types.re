@@ -5,6 +5,7 @@ module StrMap = Map.Make(String);
 
 type state = {
   entry: string,
+  externalEverything: bool,
   base: string,
   ids: Hashtbl.t(string, int),
   alias: StrMap.t(string),

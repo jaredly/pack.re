@@ -1,10 +1,10 @@
 {
   "name": "pack.re",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "scripts": {
     "start": "bsb -make-world -w -backend native",
     "build": "bsb -make-world -backend native",
-    "test": "./lib/bs/native/pack.native ./test.js",
+    "test": "./lib/bs/native/main.native ./test.js",
     "postinstall": "npm run build",
     "clean": "bsb -clean-world"
   },

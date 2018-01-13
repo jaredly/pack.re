@@ -116,11 +116,15 @@ let process = (state, abspath, contents, requires, loop) => {
       let pre = String.sub(contents, 0, pos);
       let post = sliceToEnd(contents, pos + length);
       let childPath = resolve(state, abspath, text);
-      let childId = loop(state, childPath);
-      let strId = string_of_int(childId);
+      let newText = if (state.externalEverything && text.[0] != '.') {
+        "window.packRequire(\"" ++ String.escaped(childPath) ++ "\")"
+      } else {
+        let childId = loop(state, childPath);
+        "require(" ++ string_of_int(childId) ++ ")";
+      };
       (
-        pre ++ strId ++ post,
-        offset + (String.length(strId) - length)
+        pre ++ newText ++ post,
+        offset + (String.length(newText) - length)
       )
     },
     (contents, 0)

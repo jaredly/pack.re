@@ -30,8 +30,8 @@ let parseContents = (fileName, contents) => {
       /* print_endline(name); */
       (loc, st)
     }
-    | Call({callee: (_, Identifier((_, "require"))), arguments: [Expression((loc, Literal({value: String(path), raw})))]}) => {
-      requires := [Types.{pos: Loc.(loc.start.offset), length: String.length(raw), text: path}, ...requires^];
+    | Call({callee: (_, Identifier((_, "require"))), arguments: [Expression((_, Literal({value: String(path), raw})))]}) => {
+      requires := [Types.{pos: Loc.(loc.start.offset), length: Loc.(loc._end.offset - loc.start.offset), text: path}, ...requires^];
       (loc, st)
     }
     | _ => Mapper.defaultMapper.expression(mapper, (loc, st))

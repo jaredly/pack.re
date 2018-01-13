@@ -1,5 +1,5 @@
 
-let parse = Minimist.parse(~alias=[("h", "help")], ~presence=["help"], ~multi=["rename"], ~strings=["base"]);
+let parse = Minimist.parse(~alias=[("h", "help")], ~presence=["help", "external-everything"], ~multi=["rename"], ~strings=["base"]);
 
 let help = {|
 # pack.re - a simple js bundler for reason
@@ -8,6 +8,9 @@ Usage: pack.re [options] entry-file.js > bundle.js
 
   --base (default: current directory)
       expected to contain node_modules
+  --external-everything
+      everything that's not a local source file is treated as an external
+      meaning it has to have been loaded by pack.re already on the page.
   --rename newName=realName (can be defined multiple times)
       maps `require("newName")` to a node_module called "realName"
   -h, --help
@@ -29,6 +32,7 @@ if (Minimist.StrSet.mem("help", opts.presence)) {
   | [] => fail("Missing entry file")
   | [entry] => try(Pack.process(
       ~base=?Minimist.get(opts.strings, "base"),
+      ~externalEverything=Minimist.StrSet.mem("external-everything", opts.presence),
       ~renames=
         List.map(item => switch (Str.split(Str.regexp("="), item)) {
         | [alias, m] => (alias, m)
