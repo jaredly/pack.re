@@ -5,17 +5,19 @@
     "number": "-40+6+7-26-27+32..39-28-44+45",
     "error": "+8",
   },
+  "namespace": true,
   "sources": [
     "src",
-    "src/jeason"
+    "src/jeason",
+    {"dir": "bin", "type": "dev"},
   ],
   "bs-dependencies": ["rex-json", "reason-cli-tools", "minimist.re"],
   "entries": [{
     "backend": "bytecode",
-    "main-module": "Pack"
+    "main-module": "Main"
   }, {
     "backend": "native",
-    "main-module": "Pack"
+    "main-module": "Main"
   }],
   "refmt": 3
 }

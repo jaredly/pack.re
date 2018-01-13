@@ -548,14 +548,14 @@ end = struct
         | T_LBRACKET ->
           let indexer = indexer_property env start_loc static variance in
           semicolon exact env;
-          properties allow_static exact env
+          properties ~allow_static ~exact env
             (acc, indexer::indexers, callProperties)
         | T_LESS_THAN
         | T_LPAREN ->
           error_unsupported_variance env variance;
           let call_prop = call_property env start_loc static in
           semicolon exact env;
-          properties allow_static exact env
+          properties ~allow_static ~exact env
             (acc, indexers, call_prop::callProperties)
         | token ->
           let static, (_, key) = match static, variance, token with
@@ -582,7 +582,7 @@ end = struct
             property env start_loc static variance key
           in
           semicolon exact env;
-          properties allow_static exact env
+          properties ~allow_static ~exact env
             (property::acc, indexers, callProperties)
 
       in fun ?(allow_static=false) ?(allow_exact=false) env ->
