@@ -15,8 +15,8 @@ Usage: pack.re [options] entry-file.js > bundle.js
 |};
 
 let fail = (msg) => {
-  print_endline(msg);
-  print_endline(help);
+  Printf.eprintf("\n>>> ERROR: %s <<<\n", msg);
+  Printf.eprintf("%s", help);
   exit(1);
 };
 
@@ -26,8 +26,8 @@ switch (parse(List.tl(Array.to_list(Sys.argv)))) {
 if (Minimist.StrSet.mem("help", opts.presence)) {
   print_endline(help); exit(0);
 } else switch (opts.rest) {
-  | [] => fail("Expected entry file as final argument")
-  | [entry] => Pack.process(
+  | [] => fail("Missing entry file")
+  | [entry] => try(Pack.process(
       ~base=?Minimist.get(opts.strings, "base"),
       ~renames=
         List.map(item => switch (Str.split(Str.regexp("="), item)) {
@@ -35,7 +35,9 @@ if (Minimist.StrSet.mem("help", opts.presence)) {
         | _ => fail("Expected rename argument to be of the form alias=realname")
         }, Minimist.multi(opts.multi, "rename")),
       entry
-    ) |> print_endline
+    ) |> print_endline) {
+      | Failure(message) => fail(message)
+    }
   | _ => fail("Only one entry file allowed")
 }
 };
