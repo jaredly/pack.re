@@ -5,10 +5,10 @@
     "start": "bsb -make-world -w -backend native",
     "build": "bsb -make-world -backend native",
     "test": "./lib/bs/native/main.native ./test.js",
-    "postinstall": "npm run build",
+    "// postinstall": "npm run build",
     "clean": "bsb -clean-world"
   },
-  "bin": "./pack.re.sh",
+  "// bin": "./pack.re.sh",
   "keywords": [
     "BuckleScript"
   ],
