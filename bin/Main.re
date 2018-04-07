@@ -1,5 +1,5 @@
 
-let parse = Minimist.parse(~alias=[("h", "help")], ~presence=["help", "external-everything"], ~multi=["rename"], ~strings=["base"]);
+let parse = Minimist.parse(~alias=[("h", "help")], ~presence=["help", "external-everything", "just-externals"], ~multi=["rename"], ~strings=["base"]);
 
 let help = {|
 # pack.re - a simple js bundler for reason
@@ -11,6 +11,10 @@ Usage: pack.re [options] entry-file.js > bundle.js
   --external-everything
       everything that's not a local source file is treated as an external
       meaning it has to have been loaded by pack.re already on the page.
+  --just-externals
+      This is the inverse of --external-everything. Only package up the exernals.
+      With this, you can pass multiple entry-files, and it will produce a bundle
+      that contains the exernals for all of them.
   --rename newName=realName (can be defined multiple times)
       maps `require("newName")` to a node_module called "realName"
   -h, --help
@@ -26,22 +30,30 @@ let fail = (msg) => {
 switch (parse(List.tl(Array.to_list(Sys.argv)))) {
 | Minimist.Error(err) => fail(Minimist.report(err))
 | Ok(opts) =>
+open Minimist;
 if (Minimist.StrSet.mem("help", opts.presence)) {
   print_endline(help); exit(0);
-} else switch (opts.rest) {
-  | [] => fail("Missing entry file")
-  | [entry] => try(Pack.process(
-      ~base=?Minimist.get(opts.strings, "base"),
-      ~externalEverything=Minimist.StrSet.mem("external-everything", opts.presence),
-      ~renames=
-        List.map(item => switch (Str.split(Str.regexp("="), item)) {
-        | [alias, m] => (alias, m)
-        | _ => fail("Expected rename argument to be of the form alias=realname")
-        }, Minimist.multi(opts.multi, "rename")),
-      entry
-    ) |> print_endline) {
-      | Failure(message) => fail(message)
+} else {
+    switch (opts.rest) {
+    | [] => fail("Missing entry file")
+    | entries => try(Pack.process(
+        ~base=?Minimist.get(opts.strings, "base"),
+        ~mode=if (Minimist.StrSet.mem("external-everything", opts.presence)) {
+          ExternalEverything
+        } else if (Minimist.StrSet.mem("just-externals", opts.presence)) {
+          JustExternals
+        } else {
+          Normal
+        },
+        ~renames=
+          List.map(item => switch (Str.split(Str.regexp("="), item)) {
+          | [alias, m] => (alias, m)
+          | _ => fail("Expected rename argument to be of the form alias=realname")
+          }, Minimist.multi(opts.multi, "rename")),
+        entries
+      ) |> print_endline) {
+        | Failure(message) => fail(message)
+      }
     }
-  | _ => fail("Only one entry file allowed")
-}
+  }
 };

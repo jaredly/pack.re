@@ -5,7 +5,7 @@ No frills.
 
 Definitely alpha quality at the moment. But it works :D so far
 
-```
+```txt
 # pack.re - a simple js bundler for reason
 
 Usage: pack.re [options] entry-file.js > bundle.js
@@ -20,14 +20,14 @@ Usage: pack.re [options] entry-file.js > bundle.js
 
 ## Global usage, if you want
 
-```
+```sh
 npm i -g pack.re
 pack.re --help
 ```
 
 ## Local usage
 
-```
+```sh
 npm i pack.re
 ```
 
