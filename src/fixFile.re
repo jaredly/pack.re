@@ -117,6 +117,24 @@ let resolve = (state, base, path) => {
 
 Printexc.record_backtrace(true);
 
+let makeRelative = (a, b) => {
+  if (String.length(b) > String.length(a)) {
+    if (String.sub(b, 0, String.length(a)) == a) {
+      let res = String.sub(b, String.length(a), String.length(b) - String.length(a));
+      if (res.[0] == '/') {
+        "." ++ res
+      } else {
+        res
+      }
+    } else {
+      b
+    }
+  } else {
+    b
+  }
+};
+
+
 let process = (state, abspath, contents, requires, loop) => {
   let (fixed, _) = requires |> List.fold_left(
     ((contents, offset), {pos, length, text}) => {
@@ -127,7 +145,7 @@ let process = (state, abspath, contents, requires, loop) => {
       let post = sliceToEnd(contents, pos + length);
       let childPath = resolve(state, abspath, text);
       let newText = if (state.mode == ExternalEverything && text.[0] != '.') {
-        "window.packRequire(\"" ++ String.escaped(childPath) ++ "\")"
+        "window.packRequire(\"" ++ String.escaped(makeRelative(state.base, childPath)) ++ "\")"
       } else {
         let childId = loop(state, text.[0] == '.', childPath);
         "require(" ++ string_of_int(childId) ++ ")";

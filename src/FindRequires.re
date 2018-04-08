@@ -18,6 +18,8 @@ let parseContents = (fileName, contents) => {
 
   let requires = ref([]);
 
+  /* TODO do some DCE based on process.env.NODE_ENV == "production" */
+
   let mapper = Spider_monkey_ast.{
     ...Mapper.defaultMapper,
     expression: (mapper, (loc, st)) => Expression.(switch st {
