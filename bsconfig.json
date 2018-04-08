@@ -18,6 +18,9 @@
   }, {
     "backend": "native",
     "main-module": "Main"
+  }, {
+    "backend": "native",
+    "main-module": "Debug"
   }],
   "refmt": 3
 }

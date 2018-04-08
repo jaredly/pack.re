@@ -29,6 +29,7 @@ let abspath = (path) => {
 
 let unwrap = (message, v) => switch v { | None => failwith(message) | Some(v) => v };
 
+/* TODO: use a negative id for entry files, so that adding entry files doesn't churn external files */
 let rec process = (inEntryLand, state, isRelative, path) => {
   let inEntryLand = inEntryLand && isRelative;
   let path = abspath(path);

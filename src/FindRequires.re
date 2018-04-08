@@ -3,11 +3,6 @@ let parseContents = (fileName, contents) => {
   let parse_options =
     Some(
       Parser_env.{
-        /***
-         * Always parse ES proposal syntax. The user-facing config option to
-         * ignore/warn/enable them is handled during inference so that a clean error
-         * can be surfaced (rather than a more cryptic parse error).
-         */
         esproposal_class_instance_fields: true,
         esproposal_class_static_fields: true,
         esproposal_decorators: true,
@@ -39,12 +34,7 @@ let parseContents = (fileName, contents) => {
   };
 
   List.map(mapper.statement(mapper), statements) |> ignore;
-  List.rev(requires^)
-  /* output_string(stdout, Config.ast_impl_magic_number);
-  output_value(stdout, file);
-  let result: Parsetree.structure =
-    statements |> List.map((statementWrap) => topStatementsMapper(statementWrap)) |> List.concat;
-  output_value(stdout, result) */
+  requires^ |> List.sort((a, b) => a.Types.pos - b.Types.pos)
 };
 
 

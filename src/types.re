@@ -14,3 +14,13 @@ type state = {
   mutable nextId: int,
   mutable modules: list((int, string, string, bool))
 };
+
+let init = () => {
+  entries: [],
+  mode: Normal,
+  base: "",
+  ids: Hashtbl.create(100),
+  alias: StrMap.empty,
+  nextId: 0,
+  modules: [],
+};

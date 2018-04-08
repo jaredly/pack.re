@@ -62,7 +62,11 @@ let resolvePackageJsonMain = foundPath => {
   let data = Json.parse(contents |> unwrap("Unable to read package.json " ++ foundPath));
   switch (data |> Json.get("main")) {
   | Some(Json.String(v)) => Filename.concat(foundPath, v)
-  | _ => failwith("No main found in package.json " ++ foundPath)
+  | _ => if (Files.isFile(Filename.concat(foundPath, "index.js"))) {
+      Filename.concat(foundPath, "index.js")
+    } else {
+      failwith("No main found in package.json " ++ foundPath)
+    }
   }
 };
 
@@ -72,6 +76,8 @@ let resolve = (state, base, path) => {
   } else {
     let foundPath = if (path.[0] == '.') {
       Filename.concat(Filename.dirname(base), path)
+    } else if (path.[0] == '/') {
+      path /* absolute folks */
     } else {
       let moduleName = firstPart(path);
       /* print_endline(moduleName ++ ":" ++ path); */
@@ -81,11 +87,15 @@ let resolve = (state, base, path) => {
       } else {
         moduleName
       };
-      let base = switch (findNodeModule(moduleName, Filename.dirname(base), state.base)) {
-      | None => failwith("Node module not found: " ++ moduleName)
-      | Some(x) => x
-      };
-      Filename.concat(base, rest);
+      if (moduleName.[0] == '/') {
+        Filename.concat(moduleName, rest)
+      } else {
+        let base = switch (findNodeModule(moduleName, Filename.dirname(base), state.base)) {
+        | None => failwith("Node module not found: " ++ moduleName)
+        | Some(x) => x
+        };
+        Filename.concat(base, rest);
+      }
     };
     if (Files.isDirectory(foundPath)) {
       if (Files.isFile(Filename.concat(foundPath, "package.json"))) {
