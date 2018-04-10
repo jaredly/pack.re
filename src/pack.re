@@ -30,7 +30,7 @@ let abspath = (path) => {
 let unwrap = (message, v) => switch v { | None => failwith(message) | Some(v) => v };
 
 /* TODO: use a negative id for entry files, so that adding entry files doesn't churn external files */
-let rec process = (inEntryLand, state, isRelative, path) => {
+let rec process = (inEntryLand, state, isRelative, mainOf, path) => {
   let inEntryLand = inEntryLand && isRelative;
   let path = abspath(path);
   if (Hashtbl.mem(state.ids, path)) {
@@ -43,7 +43,7 @@ let rec process = (inEntryLand, state, isRelative, path) => {
     let requires = FindRequires.parseContents(path, contents);
     /* let requires = []; */
     let fixed = FixFile.process(state, path, contents, requires, process(inEntryLand));
-    state.modules = [(id, path, fixed, inEntryLand), ...state.modules];
+    state.modules = [(id, path, fixed, inEntryLand, mainOf), ...state.modules];
     id
   }
 };
@@ -57,7 +57,7 @@ let modules = {}
 let initializers = {
     |} ++
   (List.map(
-    ((id, path, body, _)) => string_of_int(id) ++ ": function(module, exports, require) {" ++  body
+    ((id, path, body, _, _mainOf)) => string_of_int(id) ++ ": function(module, exports, require) {" ++  body
      ++ "\n//# sourceURL=" ++ FixFile.makeRelative(base, path) ++ "\n}",
     modules
   ) |> String.concat(",\n  "))
@@ -66,7 +66,12 @@ let initializers = {
 let nameMap = {
   |} ++
   (List.map(
-    ((id, path, body, _)) => "\"" ++ String.escaped(FixFile.makeRelative(base, path)) ++ "\": " ++ string_of_int(id),
+    ((id, path, body, _, mainOf)) =>
+    ("\"" ++ String.escaped(FixFile.makeRelative(base, path)) ++ "\": " ++ string_of_int(id))
+    ++ switch mainOf {
+    | None => ""
+    | Some(name) => ", \"" ++ name ++ "\": " ++ string_of_int(id)
+    },
     modules
   ) |> String.concat(",\n  "))
   ++ {|
@@ -84,12 +89,13 @@ window.packRequire = (name) => {
   if (nameMap[name]) return require(nameMap[name])
   else throw new Error("Unable to find external: " + name)
 }
+window.packRequire.nameMap = nameMap
   |} : "")
   ++ (mode != JustExternals ? String.concat(";", List.map(id => Printf.sprintf("require(%d)", id), entryIds)) : "")
   ++ "})();"
 };
 
-let process = (~mode=Normal, ~renames, ~base=Unix.getcwd(), entries) => {
+let process = (~mode=Normal, ~renames, ~extraRequires=[], ~base=Unix.getcwd(), entries) => {
   let state = {
     entries,
     mode,
@@ -99,7 +105,8 @@ let process = (~mode=Normal, ~renames, ~base=Unix.getcwd(), entries) => {
     nextId: 0,
     modules: []
   };
-  let ids = List.map(process(true, state, true), entries);
-  let includedModules = state.mode == JustExternals ? List.filter(((_, _, _, inEntryLand)) => inEntryLand, state.modules) : state.modules;
+  let ids = List.map(process(true, state, true, None), entries);
+  extraRequires |> List.iter(x => process(false, state, false, None, x) |> ignore);
+  let includedModules = state.mode == JustExternals ? List.filter(((_, _, _, inEntryLand, _mainOf)) => inEntryLand, state.modules) : state.modules;
   formatBundle(mode, base, state.modules, ids)
 };

@@ -1,5 +1,9 @@
 
-let parse = Minimist.parse(~alias=[("h", "help")], ~presence=["help", "external-everything", "just-externals"], ~multi=["rename"], ~strings=["base"]);
+let parse = Minimist.parse(~alias=[("h", "help")],
+  ~presence=["help", "external-everything", "just-externals"],
+  ~multi=["rename", "extra"],
+  ~strings=["base"]
+);
 
 let help = {|
 # pack.re - a simple js bundler for reason
@@ -11,6 +15,8 @@ Usage: pack.re [options] entry-file.js > bundle.js
   --external-everything
       everything that's not a local source file is treated as an external
       meaning it has to have been loaded by pack.re already on the page.
+  --extra
+      add another require to be treated as an external
   --just-externals
       This is the inverse of --external-everything. Only package up the exernals.
       With this, you can pass multiple entry-files, and it will produce a bundle
@@ -45,6 +51,7 @@ if (Minimist.StrSet.mem("help", opts.presence)) {
         } else {
           Normal
         },
+        ~extraRequires=Minimist.multi(opts.multi, "extra"),
         ~renames=
           List.map(item => switch (Str.split(Str.regexp("="), item)) {
           | [alias, m] => (alias, m)

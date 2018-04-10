@@ -11,7 +11,7 @@ switch (Sys.argv) {
     Printf.printf("Require: %d - len %d -- %s", pos, length, text);
   });
   let state = Types.init();
-  let fixed = FixFile.process(state, path, contents, requires, (_, _, _) => 1);
+  let fixed = FixFile.process(state, path, contents, requires, (_, _, _, _) => 1);
   print_endline(contents);
   print_endline(fixed);
 }

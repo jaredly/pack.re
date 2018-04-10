@@ -12,7 +12,8 @@ type state = {
   ids: Hashtbl.t(string, int),
   alias: StrMap.t(string),
   mutable nextId: int,
-  mutable modules: list((int, string, string, bool))
+  /* id, path, fixedContents, inEntryLand, mainOf - package name that this is the main import of */
+  mutable modules: list((int, string, string, bool, option(string)))
 };
 
 let init = () => {

@@ -74,30 +74,30 @@ let resolve = (state, base, path) => {
   if (String.length(path) == 0) {
     failwith("Invalid require - empty string")
   } else {
-    let foundPath = if (path.[0] == '.') {
-      Filename.concat(Filename.dirname(base), path)
+    let (foundPath, mainOf) = if (path.[0] == '.') {
+      (Filename.concat(Filename.dirname(base), path), None)
     } else if (path.[0] == '/') {
-      path /* absolute folks */
+      (path, None) /* absolute folks */
     } else {
       let moduleName = firstPart(path);
       /* print_endline(moduleName ++ ":" ++ path); */
       let rest = moduleName != path ? sliceToEnd(path, String.length(moduleName) + 1) : "";
-      let moduleName = if (StrMap.mem(moduleName, state.alias)) {
+      let aliasedName = if (StrMap.mem(moduleName, state.alias)) {
         StrMap.find(moduleName, state.alias)
       } else {
         moduleName
       };
-      if (moduleName.[0] == '/') {
-        Filename.concat(moduleName, rest)
+      if (aliasedName.[0] == '/') {
+        (Filename.concat(aliasedName, rest), None)
       } else {
-        let base = switch (findNodeModule(moduleName, Filename.dirname(base), state.base)) {
-        | None => failwith("Node module not found: " ++ moduleName)
+        let base = switch (findNodeModule(aliasedName, Filename.dirname(base), state.base)) {
+        | None => failwith("Node module not found: " ++ aliasedName ++ " at " ++ base)
         | Some(x) => x
         };
-        Filename.concat(base, rest);
+        (Filename.concat(base, rest), rest == "" ? Some(moduleName) : None);
       }
     };
-    if (Files.isDirectory(foundPath)) {
+    (if (Files.isDirectory(foundPath)) {
       if (Files.isFile(Filename.concat(foundPath, "package.json"))) {
         resolvePackageJsonMain(foundPath)
       } else if (Files.isFile(Filename.concat(foundPath, "index.js"))) {
@@ -111,7 +111,7 @@ let resolve = (state, base, path) => {
       foundPath ++ ".js"
     } else {
       failwith("Not a real thing: " ++ foundPath)
-    }
+    }, mainOf)
   }
 };
 
@@ -143,11 +143,11 @@ let process = (state, abspath, contents, requires, loop) => {
       /* print_endline(string_of_int(pos)); */
       let pre = String.sub(contents, 0, pos);
       let post = sliceToEnd(contents, pos + length);
-      let childPath = resolve(state, abspath, text);
+      let (childPath, mainOf) = resolve(state, abspath, text);
       let newText = if (state.mode == ExternalEverything && text.[0] != '.') {
         "window.packRequire(\"" ++ String.escaped(makeRelative(state.base, childPath)) ++ "\")"
       } else {
-        let childId = loop(state, text.[0] == '.', childPath);
+        let childId = loop(state, text.[0] == '.', mainOf, childPath);
         "require(" ++ string_of_int(childId) ++ ")";
       };
       (
