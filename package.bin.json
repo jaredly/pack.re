@@ -1,0 +1,25 @@
+{
+  "name": "pack.re-bin",
+  "version": "0.2.0",
+  "scripts": {
+    "start": "bsb -make-world -w -backend native",
+    "build": "bsb -make-world -backend native",
+    "test": "./lib/bs/native/main.native ./test.js",
+    "postinstall": "npm run build",
+    "clean": "bsb -clean-world"
+  },
+  "bin": "./pack.re.sh",
+  "keywords": [
+    "BuckleScript"
+  ],
+  "author": "Jared Forsyth",
+  "license": "MIT",
+  "devDependencies": {
+    "bs-platform": "bsansouci/bsb-native#2.1.1"
+  },
+  "dependencies": {
+    "rex-json": "1.0.2",
+    "minimist.re": "0.0.2",
+    "reason-cli-tools": "1.0.4"
+  }
+}
