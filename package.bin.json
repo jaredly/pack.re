@@ -1,6 +1,6 @@
 {
   "name": "pack.re-bin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "scripts": {
     "start": "bsb -make-world -w -backend native",
     "build": "bsb -make-world -backend native",
@@ -15,7 +15,7 @@
   "author": "Jared Forsyth",
   "license": "MIT",
   "devDependencies": {
-    "bs-platform": "bsansouci/bsb-native#2.1.1"
+    "bs-platform": "bsansouci/bsb-native#fast"
   },
   "dependencies": {
     "rex-json": "1.0.2",
