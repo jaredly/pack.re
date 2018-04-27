@@ -39,6 +39,8 @@ open ReasonCliTools;
 
 let hasPackageJson = d => Files.isFile(d /+ "package.json");
 
+let commonNodeBuiltins = ["fs", "child_process", "path"];
+
 let rec findNodeModule = (needle, current, root) => {
   let full = current /+ "node_modules" /+ needle;
   if (hasPackageJson(current) && Files.isDirectory(full)) {
@@ -70,14 +72,20 @@ let resolvePackageJsonMain = foundPath => {
   }
 };
 
+type resolution =
+  | Found(string, option(string))
+  | NotFound(string)
+  | NoDefault(string)
+  | Builtin(string);
+
 let resolve = (state, base, path) => {
   if (String.length(path) == 0) {
     failwith("Invalid require - empty string")
   } else {
-    let (foundPath, mainOf) = if (path.[0] == '.') {
-      (Filename.concat(Filename.dirname(base), path), None)
+    let initial = if (path.[0] == '.') {
+      `Good(Filename.concat(Filename.dirname(base), path), None)
     } else if (path.[0] == '/') {
-      (path, None) /* absolute folks */
+      `Good(path, None) /* absolute folks */
     } else {
       let moduleName = firstPart(path);
       /* print_endline(moduleName ++ ":" ++ path); */
@@ -88,36 +96,82 @@ let resolve = (state, base, path) => {
         moduleName
       };
       if (aliasedName.[0] == '/') {
-        (Filename.concat(aliasedName, rest), None)
+        `Good(Filename.concat(aliasedName, rest), None)
       } else {
-        let base = switch (findNodeModule(aliasedName, Filename.dirname(base), state.base)) {
-        | None => failwith("Node module not found: " ++ aliasedName ++ " at " ++ base)
-        | Some(x) => x
-        };
-        (Filename.concat(base, rest), rest == "" ? Some(moduleName) : None);
+        if (List.mem(aliasedName, commonNodeBuiltins)) {
+          `Builtin(aliasedName)
+        } else {
+          switch (findNodeModule(aliasedName, Filename.dirname(base), state.base)) {
+          | None => `NotFound(aliasedName)
+          | Some(base) => `Good(Filename.concat(base, rest), rest == "" ? Some(moduleName) : None);
+          };
+        }
       }
     };
-    (if (Files.isDirectory(foundPath)) {
-      if (Files.isFile(Filename.concat(foundPath, "package.json"))) {
-        resolvePackageJsonMain(foundPath)
-      } else if (Files.isFile(Filename.concat(foundPath, "index.js"))) {
-        Filename.concat(foundPath, "index.js")
+
+    switch initial {
+    | `Builtin(name) => Builtin(name)
+    | `NotFound(name) => NotFound(name)
+    | `Good(foundPath, mainOf) => {
+      if (Files.isDirectory(foundPath)) {
+        if (Files.isFile(Filename.concat(foundPath, "package.json"))) {
+          Found(resolvePackageJsonMain(foundPath), mainOf)
+        } else if (Files.isFile(Filename.concat(foundPath, "index.js"))) {
+          Found(Filename.concat(foundPath, "index.js"), mainOf)
+        } else {
+          NoDefault(foundPath)
+        }
+      } else if (Files.isFile(foundPath)) {
+        Found(foundPath, mainOf)
+      } else if (Files.isFile(foundPath ++ ".js")) {
+        Found(foundPath ++ ".js", mainOf)
       } else {
-        failwith("Directory has no discernable default js file: " ++ foundPath)
+        NotFound(foundPath)
       }
-    } else if (Files.isFile(foundPath)) {
-      foundPath
-    } else if (Files.isFile(foundPath ++ ".js")) {
-      foundPath ++ ".js"
-    } else {
-      failwith("Not a real thing: " ++ foundPath)
-    }, mainOf)
+    }
+    }
   }
 };
 
 Printexc.record_backtrace(true);
 
-let makeRelative = (a, b) => {
+let split = (str, string) => Str.split(Str.regexp_string(str), string);
+
+
+let removeExtraDots = path => Str.global_replace(Str.regexp_string("/./"), "/", path);
+
+[@test [
+  (("/a/b/c", "/a/b/d"), "../d"),
+  (("/a/b/c", "/a/b/d/e"), "../d/e"),
+  (("/a/b/c", "/d/e/f"), "../../../d/e/f"),
+  (("/a/b/c", "/a/b/c/d/e"), "./d/e"),
+]]
+let makeRelative = (base, path) => {
+  if (startsWith(path, base)) {
+    let baselen = String.length(base);
+    let rest = String.sub(path, baselen, String.length(path) - baselen);
+    if (rest == "") {
+      "./"
+    } else if (rest.[0] == '/') {
+      "." ++ rest
+    } else {
+      "./" ++ rest
+    }
+  } else {
+    let rec loop = (bp, pp) => {
+      switch (bp, pp) {
+      | ([".", ...ra], _) => loop(ra, pp)
+      | (_, [".", ...rb]) => loop(bp, rb)
+      | ([a, ...ra], [b, ...rb]) when a == b => loop(ra, rb)
+      | _ => (bp, pp)
+      }
+    };
+    let (base, path) = loop(split("/", base), split("/", path));
+    String.concat("/", (base == [] ? ["."] : List.map((_) => "..", base)) @ path) |> removeExtraDots
+  }
+};
+
+/* let makeRelative = (a, b) => {
   if (String.length(b) > String.length(a)) {
     if (String.sub(b, 0, String.length(a)) == a) {
       let res = String.sub(b, String.length(a), String.length(b) - String.length(a));
@@ -132,7 +186,7 @@ let makeRelative = (a, b) => {
   } else {
     b
   }
-};
+}; */
 
 
 let process = (state, abspath, contents, requires, loop) => {
@@ -143,12 +197,18 @@ let process = (state, abspath, contents, requires, loop) => {
       /* print_endline(string_of_int(pos)); */
       let pre = String.sub(contents, 0, pos);
       let post = sliceToEnd(contents, pos + length);
-      let (childPath, mainOf) = resolve(state, abspath, text);
-      let newText = if (state.mode == ExternalEverything && text.[0] != '.') {
-        "window.packRequire(\"" ++ String.escaped(makeRelative(state.base, childPath) |> Str.global_replace(Str.regexp_string("/./"), "/")) ++ "\")"
-      } else {
-        let childId = loop(state, text.[0] == '.', mainOf, childPath);
-        "require(" ++ string_of_int(childId) ++ ")";
+      let newText = switch (resolve(state, abspath, text)) {
+      | NotFound(text) => failwith("Unable to find " ++ text ++ " from " ++ abspath)
+      | NoDefault(text) => failwith("No discernable default file for directory: " ++ text)
+      | Builtin(name) => "alert('Shimmed node builtin " ++ name ++ "')"
+      | Found(childPath, mainOf) => {
+        if (state.mode == ExternalEverything && text.[0] != '.') {
+          "window.packRequire(\"" ++ String.escaped(makeRelative(state.base, childPath) |> Str.global_replace(Str.regexp_string("/./"), "/")) ++ "\")"
+        } else {
+          let childId = loop(state, text.[0] == '.', mainOf, childPath);
+          "require(" ++ string_of_int(childId) ++ ")";
+        };
+      }
       };
       (
         pre ++ newText ++ post,

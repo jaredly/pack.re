@@ -66,11 +66,12 @@ let initializers = {
 let nameMap = {
   |} ++
   (List.map(
-    ((id, path, body, _, mainOf)) =>
-    ("\"" ++ String.escaped(FixFile.makeRelative(base, path)) ++ "\": " ++ string_of_int(id))
-    ++ switch mainOf {
-    | None => ""
-    | Some(name) => ", \"" ++ name ++ "\": " ++ string_of_int(id)
+    ((id, path, body, _, mainOf)) => {
+      ("\"" ++ String.escaped(FixFile.makeRelative(base, path)) ++ "\": " ++ string_of_int(id))
+      ++ switch mainOf {
+      | None => ""
+      | Some(name) => ", \"" ++ name ++ "\": " ++ string_of_int(id)
+      }
     },
     modules
   ) |> String.concat(",\n  "))
@@ -84,13 +85,15 @@ let require = (id) => {
   return modules[id].exports
 };
   |} ++
-  (mode != ExternalEverything ? {|
+  (mode != ExternalEverything ? {
+    {|
 window.packRequire = (name) => {
   if (nameMap[name]) return require(nameMap[name])
   else throw new Error("Unable to find external: " + name)
 }
 window.packRequire.nameMap = nameMap
-  |} : "")
+  |}
+} : "")
   ++ (mode != JustExternals ? String.concat(";", List.map(id => Printf.sprintf("require(%d)", id), entryIds)) : "")
   ++ "})();"
 };
